@@ -7,6 +7,10 @@ Talk-to-UI puts a toolbar on the user's local dev site. They pick something on t
 
 `<skill-dir>` below means the folder this SKILL.md lives in. Run every script from the **project root** (the folder with the app's `package.json`), so its state lands in that project's `.talk-to-ui/`.
 
+## Always on (installed with the extension)
+
+When the installer set up the always-on launcher (`~/.talk-to-ui/app`, port 8399) and the browser extension is loaded, there is nothing to start: every localhost page of a project gets the toolbar, and `scripts/runner.mjs` does the work headless in that project with the model picked in the toolbar. Check it with `curl -s localhost:8399/health`; its log is `~/.talk-to-ui/launcher.log`, each project's is `.talk-to-ui/live/runner.log`. Use **Start** below only when the user wants the toolbar without the extension.
+
 ## Start (in order)
 
 1. **Dev server.** Find the URL that serves the app (terminal output, `package.json` scripts, or an open tab). If nothing is running, start it in the background. The toolbar's helper port (8400) is not the app URL.
@@ -25,7 +29,7 @@ Every `generate` event carries `model` and `effort` from the toolbar's picker.
 
 ## Requests with nothing to act on
 
-If a `generate` event has no `freeformPrompt`, no comment text, and the action is the freeform one (`ttui`), there is no instruction: reply `--reply EVENT_ID error "Got it, but no instruction came with it. Type or say what to change, then press Go."` instead of guessing a redesign.
+If a `generate` event has no `freeformPrompt`, no comment text, and the action is the freeform one (`ttui`), there is no instruction: reply `--reply EVENT_ID answer "Got it, but no instruction came with it. Type or say what to change, then press Go."` instead of guessing a redesign. A question rather than a change request gets its answer the same way (`answer` shows as a plain note in the toolbar).
 
 ## Design rules
 

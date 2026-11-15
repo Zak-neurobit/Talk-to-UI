@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Talk-to-UI",
+  "version": "0.1.0",
+  "description": "Puts the Talk-to-UI toolbar on every localhost page whose project is on this computer.",
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": { "128": "icon128.png" }
+}

@@ -95,7 +95,7 @@ function codexModels() {
 async function main() {
   const { provider, terminal } = parseArgs(process.argv.slice(2));
   if (provider !== 'claude' && provider !== 'codex') {
-    console.error('Usage: node models.mjs --provider claude|codex --terminal <model id the terminal is running>');
+    console.error('Usage: node models.mjs --provider claude|codex --terminal <model id the terminal is running | none>');
     process.exit(2);
   }
   const models = provider === 'claude' ? await claudeModels() : codexModels();
@@ -104,7 +104,8 @@ async function main() {
     process.exit(1);
   }
   // The terminal's own model goes first: it is the no-extra-wait option.
-  const termId = models.some((m) => m.id === terminal) ? terminal : models[0].id;
+  // `--terminal none` (always-on mode): no terminal, every model starts the same way.
+  const termId = terminal === 'none' ? null : models.some((m) => m.id === terminal) ? terminal : models[0].id;
   models.sort((a, b) => (a.id === termId ? -1 : b.id === termId ? 1 : 0));
   const out = {
     provider: provider === 'claude' ? 'Claude' : 'Codex',

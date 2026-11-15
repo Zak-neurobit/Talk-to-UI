@@ -293,6 +293,14 @@ function validateEvent(msg) {
 // HTTP request handler
 // ---------------------------------------------------------------------------
 
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+/** Origin of the page that made the request (Origin header, else the Referer's origin). */
+function requestOrigin(req) {
+  if (req.headers.origin) return req.headers.origin;
+  try { return new URL(req.headers.referer).origin; } catch { return ''; }
+}
+
 function createRequestHandler({ detectScript, sessionPath, livePath }) {
   return (req, res) => {
     const url = new URL(req.url, `http://localhost:${state.port}`);
@@ -300,6 +308,13 @@ function createRequestHandler({ detectScript, sessionPath, livePath }) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+    // Only pages on this machine may load the toolbar or send it requests:
+    // a website on the internet could otherwise read the token and drive the AI.
+    if (req.headers['sec-fetch-site'] === 'cross-site' && !LOCAL_ORIGIN.test(requestOrigin(req))) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.end('local pages only');
+      return;
+    }
 
     const p = url.pathname;
 
@@ -682,7 +697,7 @@ function handlePollPost(req, res) {
       try {
         const eventType = msg.type === 'discard' || msg.type === 'discarded'
           ? 'discarded'
-          : msg.type === 'complete'
+          : msg.type === 'complete' || msg.type === 'answer'
             ? 'complete'
             : msg.type === 'error'
               ? 'agent_error'

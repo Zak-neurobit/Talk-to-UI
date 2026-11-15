@@ -1851,7 +1851,9 @@
         const tag = origContent.tagName.toLowerCase();
         const cls = origContent.className;
         let liveEl = null;
-        if (origContent.id) {
+        if (currentSessionId === sessionId && selectedElement && selectedElement.isConnected && !own(selectedElement)) {
+          liveEl = selectedElement; // the element the user picked for this request
+        } else if (origContent.id) {
           liveEl = document.getElementById(origContent.id);
         } else if (cls) {
           // Find by tag + exact class match
@@ -2230,15 +2232,22 @@
           setTimeout(() => {
             if (arrivedVariants >= expectedVariants && expectedVariants > 0) return;
             if (state !== 'GENERATING') return;
+            // Plain HTML on a server without hot reload: nothing will swap the
+            // page, so read the versions straight from the source file.
+            if (msg.file && /\.html?$/i.test(msg.file) && !document.querySelector('[data-ttui-variants="' + msg.id + '"]')) {
+              injectVariantsFromSource(msg.file, msg.id);
+              return;
+            }
             showToast(
               "Variants ready. If the picked element isn't visible, retrace the path that revealed it — they'll appear automatically.",
               15000,
             );
           }, 2000);
           break;
+        case 'answer':
         case 'error':
-          console.error('[ttui] Error:', msg.message);
-          showToast('Error: ' + msg.message, 5000);
+          if (msg.type === 'error') console.error('[ttui] Error:', msg.message);
+          showToast(msg.type === 'answer' ? msg.message : 'Error: ' + msg.message, msg.type === 'answer' ? 12000 : 5000);
           hideBar();
           if (msg.id && msg.id === currentSessionId) {
             // The request is over: stop the sweep and forget it, so a reload doesn't resume it.
@@ -3488,8 +3497,8 @@
       mPop.style.minWidth = '260px';
       mPop.innerHTML = '<div class="' + PREFIX + '-gb-pophead">' + (MODELS.provider ? MODELS.provider + ' models' : 'Models') + '</div>';
       MODELS.models.forEach((m) => {
-        const hint = m.id === MODELS.terminal ? 'in your terminal · fastest' : '+~10 s to start';
-        const o = gbEl('button', 'opt', '<span>' + m.label + '</span><small>' + hint + '</small>');
+        const hint = !MODELS.terminal ? '' : m.id === MODELS.terminal ? 'in your terminal · fastest' : '+~10 s to start';
+        const o = gbEl('button', 'opt', '<span>' + m.label + '</span>' + (hint ? '<small>' + hint + '</small>' : ''));
         o.dataset.model = m.id;
         o.addEventListener('click', () => {
           currentModelId = m.id;
