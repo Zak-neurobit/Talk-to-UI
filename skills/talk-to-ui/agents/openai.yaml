@@ -1,0 +1,4 @@
+interface:
+  display_name: Talk-to-UI
+  short_description: Pick or circle anything on your running site, say what to change, flip through versions live.
+  default_prompt: Start Talk-to-UI on this project's dev site.
