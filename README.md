@@ -1,5 +1,9 @@
 # Talk-to-UI
 
+**Edit your app by pointing at it.** For people building with Claude Code and Codex.
+
+![Talk-to-UI: pick a headline, ask for something punchier, flip through the versions](assets/demo.gif)
+
 Point at your running site and say what to change. Talk-to-UI puts a small toolbar on your local dev server: pick or circle anything on the page, type or dictate what you want, and your AI writes 1-5 versions straight into your code. Flip through them live, the original included, and keep the one you like.
 
 Works with **Claude Code** and **Codex**.
@@ -10,9 +14,15 @@ Works with **Claude Code** and **Codex**.
 curl -fsSL https://raw.githubusercontent.com/Zak-neurobit/Talk-to-UI/main/install.sh | bash
 ```
 
-This installs the skill into `~/.claude/skills` and/or `~/.codex/skills`, whichever you have, and a small always-on launcher that starts at login. Needs Node.js 18+.
+This installs the skill into `~/.claude/skills` and/or `~/.codex/skills`, whichever you have, and a small always-on launcher that starts at login. Needs Node.js 18+ and macOS or Linux.
+
+In Claude Code you can also add it as a plugin: `/plugin install talk-to-ui --marketplace Zak-neurobit/Talk-to-UI`. The first time you use it, it offers to set up the always-on part.
 
 **Then, once:** add the browser extension. Open `chrome://extensions` (Chrome, Comet, Arc, Edge, Brave), turn on **Developer mode**, click **Load unpacked**, and choose `~/.talk-to-ui/app/extension`.
+
+### For AI assistants
+
+If a user asks you to install Talk-to-UI: run the install line above in their terminal, then tell them the one browser step it prints. To check it is running: `curl -s localhost:8399/health`.
 
 ## Use
 
@@ -21,7 +31,7 @@ This installs the skill into `~/.claude/skills` and/or `~/.codex/skills`, whiche
 3. Use ← → to flip through the versions. The first stop is your original. Enter keeps one; Escape throws them all away.
 4. Want to work on something else before deciding? Just click it. The versions you were flipping through stay on the page on the one you were looking at, with a lime tag ("A · 2/3"). Click a tag to pick up where you left off. Tags and choices survive page changes and reloads.
 
-The first time a project is opened, Talk-to-UI checks which models your account can run (about 15 seconds).
+The first time a project is opened, Talk-to-UI checks which models your account can run (about 15 seconds), and checks again once a day so new models show up.
 
 Prefer a terminal? Open the project in Claude Code or Codex and say **"start talk-to-ui"**: it adds the toolbar to the page itself and you watch the AI work.
 

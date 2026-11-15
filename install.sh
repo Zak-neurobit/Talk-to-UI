@@ -3,14 +3,17 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/Zak-neurobit/Talk-to-UI/main/install.sh | bash
 #   ./install.sh --name my-talk-to-ui     # from a local clone, under a different skill name
+#   ./install.sh --no-skill               # only the always-on part (the skill came as a Claude Code plugin)
 set -euo pipefail
 
 NAME="talk-to-ui"
+SKILL=1
 REPO="https://github.com/Zak-neurobit/Talk-to-UI"
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --name) NAME="${2:-}"; shift 2 ;;
+    --no-skill) SKILL=0; shift ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -32,6 +35,7 @@ fi
 
 installed=0
 for tool in "$HOME/.claude" "$HOME/.codex"; do
+  [ "$SKILL" = 1 ] || break
   [ -d "$tool" ] || continue                 # that AI tool isn't installed
   dest="$tool/skills/$NAME"
   mkdir -p "$tool/skills"
@@ -43,7 +47,7 @@ for tool in "$HOME/.claude" "$HOME/.codex"; do
   installed=$((installed + 1))
 done
 
-if [ "$installed" -eq 0 ]; then
+if [ "$SKILL" = 1 ] && [ "$installed" -eq 0 ]; then
   echo "Found neither ~/.claude (Claude Code) nor ~/.codex (Codex). Install one of them first." >&2
   exit 1
 fi

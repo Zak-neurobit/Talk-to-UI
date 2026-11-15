@@ -9,7 +9,7 @@ Talk-to-UI puts a toolbar on the user's local dev site. They pick something on t
 
 ## Always on (installed with the extension)
 
-When the installer set up the always-on launcher (`~/.talk-to-ui/app`, port 8399) and the browser extension is loaded, there is nothing to start: every localhost page of a project gets the toolbar, and `scripts/runner.mjs` does the work headless in that project with the model picked in the toolbar. Check it with `curl -s localhost:8399/health`; its log is `~/.talk-to-ui/launcher.log`, each project's is `.talk-to-ui/live/runner.log`. Use **Start** below only when the user wants the toolbar without the extension.
+When the installer set up the always-on launcher (`~/.talk-to-ui/app`, port 8399) and the browser extension is loaded, there is nothing to start: every localhost page of a project gets the toolbar, and `scripts/runner.mjs` does the work headless in that project with the model picked in the toolbar. Check it with `curl -s localhost:8399/health`; its log is `~/.talk-to-ui/launcher.log`, each project's is `.talk-to-ui/live/runner.log`. If the health check fails and `<skill-dir>/../../install.sh` exists (installed as a Claude Code plugin), offer to set it up: `bash <skill-dir>/../../install.sh --no-skill` starts the launcher and prints the one-time extension step. Use **Start** below only when the user wants the toolbar without the extension.
 
 ## Start (in order)
 

@@ -1,0 +1,15 @@
+{
+  "name": "talk-to-ui",
+  "description": "Talk-to-UI: point at your running app and say what to change.",
+  "owner": {
+    "name": "Zak-neurobit",
+    "url": "https://github.com/Zak-neurobit"
+  },
+  "plugins": [
+    {
+      "name": "talk-to-ui",
+      "source": "./",
+      "description": "Edit your running app by pointing at it: pick anything on a localhost page, say what to change, flip through versions."
+    }
+  ]
+}

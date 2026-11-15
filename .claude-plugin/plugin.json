@@ -1,0 +1,10 @@
+{
+  "name": "talk-to-ui",
+  "version": "1.0.0",
+  "description": "Edit your running app by pointing at it: pick anything on a localhost page, say what to change, and flip through versions your AI writes straight into your code.",
+  "author": { "name": "Zak-neurobit", "url": "https://github.com/Zak-neurobit" },
+  "homepage": "https://github.com/Zak-neurobit/Talk-to-UI",
+  "repository": "https://github.com/Zak-neurobit/Talk-to-UI",
+  "license": "Apache-2.0",
+  "keywords": ["ui", "frontend", "visual-editing", "design", "localhost", "browser", "codex", "vibe-coding"]
+}
