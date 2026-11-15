@@ -259,6 +259,7 @@ function validateEvent(msg) {
       if (msg.strokes !== undefined && !Array.isArray(msg.strokes)) return 'generate: strokes must be array';
       if (msg.model !== undefined && !(typeof msg.model === 'string' && MODEL_ID_PATTERN.test(msg.model))) return 'generate: malformed model';
       if (msg.effort !== undefined && !(typeof msg.effort === 'string' && MODEL_ID_PATTERN.test(msg.effort))) return 'generate: malformed effort';
+      if (msg.mode !== undefined && msg.mode !== 'direct') return 'generate: mode must be "direct" when set';
       return null;
     case 'accept':
       if (!isValidId(msg.id)) return 'accept: missing or malformed id';

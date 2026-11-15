@@ -11,7 +11,7 @@ Execute in order. No step skipped, no step reordered.
 1. `live.mjs`: boot.
 2. Navigate to the URL that serves `pageFile` (infer from `package.json`, docs, terminal output, or an open tab). If you can't infer it confidently, tell the user once to open their dev/preview URL. Never use `serverPort` as that URL; it's the helper, not the app.
 3. Poll loop with the default long timeout (600000 ms). After every event or `--reply`, run `live-poll.mjs` again immediately. Never pass a short `--timeout=`.
-4. On `generate`: read screenshot if present; load the action's reference; plan three distinct directions; write all variants in one edit; `--reply done`; poll again.
+4. On `generate`: read screenshot if present; load the action's reference; plan three distinct directions; write all variants in one edit; `--reply done`; poll again. If the event has `mode: "direct"`, follow **Handle `generate` with `mode: "direct"`** instead.
 5. On `accept` / `discard`: the poll script runs `live-accept.mjs`, acknowledges the delivered event, and prints `_completionAck`. Plain accepts/discards are terminal immediately; carbonize accepts remain recoverable until you finish cleanup, run `live-complete.mjs --id EVENT_ID`, and only then poll again.
 6. If interrupted, run `live-status.mjs` or `live-resume.mjs` before guessing. The durable journal replays unacknowledged work after helper restart.
 7. On `exit`: run the cleanup at the bottom.
@@ -43,7 +43,8 @@ LOOP:
   node <skill-dir>/scripts/live-poll.mjs   # default long timeout; no --timeout=
   Read JSON; dispatch on "type"
 
-  "generate"  → Handle Generate; reply done; LOOP
+  "generate"  → mode "direct"? Handle Direct; reply complete; LOOP
+                otherwise Handle Generate; reply done; LOOP
   "accept"    → Handle Accept; complete carbonize cleanup if required; LOOP
   "discard"   → Handle Discard; LOOP
   "prefetch"  → Handle Prefetch; LOOP
@@ -353,6 +354,21 @@ node <skill-dir>/scripts/live-poll.mjs --reply EVENT_ID error "Short reason"
 ```
 
 Don't run `live-accept --discard` for this; that's a pure file mutator, the browser doesn't see it, and the bar gets stuck on the GENERATING dots forever (the user has to refresh). `--discard` is only correct when the **browser** initiated the discard (user clicked ✕ during CYCLING) and the agent is just running source-side cleanup the browser already triggered.
+
+## Handle `generate` with `mode: "direct"`
+
+"Just do it" in the toolbar: the user wants one change made for real, usually behaviour rather than looks ("this button opens Settings", "make this number call us on iPhone"). There are no versions to flip through, so skip steps 2-8 above: no wrap, no variants, no parameters.
+
+1. Read the screenshot if present, and the element context to find where it lives in source.
+2. Make the change wherever it belongs, in as many files as it needs (a route, a handler, a `tel:` link, a new component). Follow the project's existing patterns.
+3. If the project has a type check (`tsc --noEmit`, `npm run typecheck`), run it on what you touched and fix what you broke.
+4. Reply with one short sentence saying what changed; the toolbar shows it as "Done: ...":
+
+```bash
+node <skill-dir>/scripts/live-poll.mjs --reply EVENT_ID complete --file MAIN_RELATIVE_PATH "Book Now now opens /settings"
+```
+
+If it can't be done, reply `error` with the reason (same command as "Aborting an in-flight session"). Then poll again.
 
 ## Handle fallback
 

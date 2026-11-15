@@ -122,6 +122,9 @@
   let hasProjectContext = false;
   let selectedAction = 'ttui';
   let selectedCount = 3;
+  // "Just do it": one direct change (any file, no versions to flip through).
+  let directMode = false;
+  let directSessionId = null; // the direct request in flight, if any
   const browserOwner = sessionState.owner;
   let checkpointTimer = null;
 
@@ -1000,7 +1003,8 @@
       transition: 'filter 0.12s ease, transform 0.1s ease',
       flexShrink: '0', whiteSpace: 'nowrap',
     });
-    go.textContent = 'Go \u2192';
+    go.id = PREFIX + '-go';
+    go.textContent = (directMode ? 'Do it' : 'Go') + ' \u2192';
     go.addEventListener('mouseenter', () => go.style.filter = 'brightness(1.1)');
     go.addEventListener('mouseleave', () => go.style.filter = 'none');
     go.addEventListener('mousedown', () => go.style.transform = 'scale(0.97)');
@@ -1029,8 +1033,8 @@
     label.textContent = actionLabel();
     row.appendChild(label);
 
-    // Dots
-    row.appendChild(buildDots(false));
+    // Dots (one per version; a direct change has no versions)
+    if (!directSessionId) row.appendChild(buildDots(false));
 
     // Status
     const status = el('span', {
@@ -1039,7 +1043,9 @@
     });
     // Variants currently arrive atomically in a single file edit, so a
     // per-variant counter would lie. Say what's true.
-    status.textContent = arrivedVariants < expectedVariants
+    status.textContent = directSessionId
+      ? 'Doing it' + (MODELS ? ' with ' + choiceLabel() : '') + '...'
+      : arrivedVariants < expectedVariants
       ? 'Writing ' + expectedVariants + (expectedVariants === 1 ? ' version' : ' versions') + (MODELS ? ' with ' + choiceLabel() : '') + '...'
       : 'Done';
     row.appendChild(status);
@@ -2200,7 +2206,11 @@
           console.log('[ttui] Live mode connected.');
           if (state === 'IDLE') state = 'PICKING';
           break;
+        case 'complete':
+          if (msg.id === directSessionId) finishDirect(msg.message);
+          break;
         case 'done':
+          if (msg.id === directSessionId) { finishDirect(msg.message); break; }
           // Variants already arrived via HMR → normal transition.
           if (arrivedVariants >= expectedVariants && expectedVariants > 0) {
             if (state === 'GENERATING') {
@@ -2230,6 +2240,7 @@
           console.error('[ttui] Error:', msg.message);
           showToast('Error: ' + msg.message, 5000);
           hideBar();
+          if (msg.id === directSessionId) { hideShaderOverlay(); hideHighlight(); directSessionId = null; currentSessionId = null; selectedElement = null; }
           state = 'PICKING';
           break;
       }
@@ -2517,7 +2528,9 @@
     if (annotEditing) finalizeEditingPin();
 
     currentSessionId = id8();
-    expectedVariants = selectedCount;
+    const direct = directMode;
+    directSessionId = direct ? currentSessionId : null;
+    expectedVariants = direct ? 1 : selectedCount;
     arrivedVariants = 0;
     visibleVariant = 0;
 
@@ -2535,7 +2548,8 @@
       type: 'generate', id: currentSessionId,
       action: selectedAction,
       freeformPrompt: prompt || undefined,
-      count: selectedCount,
+      count: expectedVariants,
+      mode: direct ? 'direct' : undefined,
       pageUrl: location.pathname,
       element: extractContext(elForCapture),
       ...currentChoice(),
@@ -2550,6 +2564,11 @@
     state = 'GENERATING';
     showBar('generating');
     showShaderOverlay(elForCapture, null, captureRect);
+    if (direct) {
+      // No wrapper will appear: the sweep runs until the agent's reply.
+      captureAndEmit(elForCapture, basePayload, snapshot, captureRect);
+      return;
+    }
     saveSession();
     sendCheckpoint('generate_started');
     writeScrollY(window.scrollY);
@@ -2559,6 +2578,18 @@
     startScrollLock(currentSessionId);
 
     captureAndEmit(elForCapture, basePayload, snapshot, captureRect);
+  }
+
+  /** The agent finished a "Just do it" change: stop the sweep, say so, keep picking. */
+  function finishDirect(message) {
+    directSessionId = null;
+    currentSessionId = null;
+    selectedElement = null;
+    hideShaderOverlay();
+    hideHighlight();
+    hideBar();
+    state = 'PICKING';
+    showToast(message ? 'Done: ' + message : 'Done', 4000);
   }
 
   // ---------------------------------------------------------------------------
@@ -3132,6 +3163,7 @@
   let pickMode = prefs.pickMode === 'draw' ? 'draw' : 'auto';
   let lastOnMode = pickMode;
   if (Number.isInteger(prefs.count) && prefs.count >= 1 && prefs.count <= 5) selectedCount = prefs.count;
+  directMode = prefs.direct === true;
 
   function modelById(id) { return MODELS ? MODELS.models.find((m) => m.id === id) || null : null; }
   function effortsFor(id) {
@@ -3148,7 +3180,7 @@
   function savePrefs() {
     try {
       localStorage.setItem(PREFS_KEY, JSON.stringify({
-        pickMode: lastOnMode, count: selectedCount, model: currentModelId, effort: currentEffort,
+        pickMode: lastOnMode, count: selectedCount, direct: directMode, model: currentModelId, effort: currentEffort,
       }));
     } catch { /* storage blocked: prefs just don't persist */ }
   }
@@ -3410,12 +3442,17 @@
     const varBtn = gbButton('variants-toggle', GB_ICONS.variants, 'Variants<span class="' + PREFIX + '-gb-sub" id="' + PREFIX + '-variants-n"></span>', 'Number of versions');
     varBtn.setAttribute('aria-haspopup', 'true');
     const varPop = gbEl('div', 'pop');
-    varPop.innerHTML = '<div class="' + PREFIX + '-gb-pophead">How many versions?</div>';
+    const doIt = gbEl('button', 'opt', '<span>Just do it</span><small>one change, any file</small>');
+    doIt.dataset.direct = 'true';
+    doIt.addEventListener('click', () => { directMode = true; savePrefs(); renderGlobalBar(); closePop(); });
+    varPop.appendChild(doIt);
+    varPop.appendChild(gbEl('div', 'sep'));
+    varPop.appendChild(gbEl('div', 'pophead', 'How many versions?'));
     const varRow = gbEl('div', 'row');
     for (let n = 1; n <= 5; n++) {
       const o = gbEl('button', 'opt', '×' + n);
       o.dataset.n = String(n);
-      o.addEventListener('click', () => { selectedCount = n; savePrefs(); renderGlobalBar(); closePop(); });
+      o.addEventListener('click', () => { directMode = false; selectedCount = n; savePrefs(); renderGlobalBar(); closePop(); });
       varRow.appendChild(o);
     }
     varPop.appendChild(varRow);
@@ -3525,8 +3562,11 @@
     }
     globalBarEl.querySelectorAll('[data-mode]').forEach((o) => o.classList.toggle('sel', o.dataset.mode === pickMode));
     const n = byId('variants-n');
-    if (n) n.textContent = '×' + selectedCount;
-    globalBarEl.querySelectorAll('[data-n]').forEach((o) => o.classList.toggle('sel', +o.dataset.n === selectedCount));
+    if (n) n.textContent = directMode ? 'Just do it' : '×' + selectedCount;
+    globalBarEl.querySelectorAll('[data-n]').forEach((o) => o.classList.toggle('sel', !directMode && +o.dataset.n === selectedCount));
+    globalBarEl.querySelectorAll('[data-direct]').forEach((o) => o.classList.toggle('sel', directMode));
+    const go = byId('go');
+    if (go) go.textContent = (directMode ? 'Do it' : 'Go') + ' →';
     if (MODELS) {
       const m = modelById(currentModelId);
       const list = effortsFor(currentModelId);

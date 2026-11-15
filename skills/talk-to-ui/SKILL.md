@@ -20,7 +20,7 @@ Talk-to-UI puts a toolbar on the user's local dev site. They pick something on t
 Every `generate` event carries `model` and `effort` from the toolbar's picker.
 
 - `model` missing, or equal to `terminal` in `models.json`: do the work yourself.
-- Any other model, **Claude Code**: hand the whole event to one subagent with the Agent tool, `model` = the event's model and `effort` = the event's effort. Brief it with the event JSON, `<skill-dir>`, and the instruction to run [reference/live.md](reference/live.md) "Handle generate" steps 1-8 for that event, including `--reply EVENT_ID done`. Wait for it, check the reply went out, then poll again.
+- Any other model, **Claude Code**: hand the whole event to one subagent with the Agent tool, `model` = the event's model and `effort` = the event's effort. Brief it with the event JSON, `<skill-dir>`, and the instruction to run [reference/live.md](reference/live.md) "Handle generate" for that event (steps 1-8 with `--reply EVENT_ID done`, or the `mode: "direct"` section with `--reply EVENT_ID complete`). Wait for it, check the reply went out, then poll again.
 - Any other model, **Codex**: run `codex exec -m <model> -c model_reasoning_effort=<effort> --sandbox workspace-write "<the same brief>"` from the project root, then poll again.
 
 ## Requests with nothing to act on
