@@ -1,16 +1,10 @@
 # Third-party notices
 
-## Impeccable
+Talk-to-UI's live toolbar, its helper scripts, and the design guides under `skills/talk-to-ui/reference/` are derived from work **Copyright 2025 Paul Bakaus**, licensed under the Apache License 2.0 (full text below).
 
-Talk-to-UI's live toolbar, its helper scripts, and the design guides under `skills/talk-to-ui/reference/` are derived from **Impeccable** by Paul Bakaus.
+**Changes made by Talk-to-UI:** every file under `skills/talk-to-ui/` was modified. The product was renamed throughout; a page scanner, a pin command and unused helpers were removed; the toolbar was restyled (collapsing hover bar, new colours and type, a border-sweep working animation replacing the original shader); and new features were added: draw-to-pick, a 1-5 version selector, the original as a selectable version, a model and reasoning-level picker with a per-account model check (`scripts/models.mjs`), per-model routing, and a direct "Just do it" mode.
 
-- Original work: https://github.com/pbakaus/impeccable
-- Original license: Apache License 2.0 (full text below)
-- Imported from the Impeccable skill as distributed in May 2026 (first commit of this repository, unmodified).
-
-**Changes made by Talk-to-UI** (see the git history for the exact diffs): every file under `skills/talk-to-ui/` was modified. The product was renamed throughout; the anti-pattern scanner, pin command and unused helpers were removed; the toolbar was restyled (collapsing hover bar, new colours and type, a border-sweep working animation replacing the original shader); and new features were added: draw-to-pick, a 1-5 version selector, the original as a selectable version, a model and reasoning-level picker with a per-account model check (`scripts/models.mjs`), and per-model routing. Impeccable itself started from Anthropic's `frontend-design` skill.
-
-Under Apache 2.0 section 4, the Impeccable-derived portions stay available under Apache 2.0. Talk-to-UI's own additions and modifications are licensed under the terms in `LICENSE.md`.
+Under Apache 2.0 section 4, the derived portions stay available under Apache 2.0. Talk-to-UI's own additions and modifications are licensed under the terms in `LICENSE.md`.
 
 ---
 
