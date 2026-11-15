@@ -2240,7 +2240,17 @@
           console.error('[ttui] Error:', msg.message);
           showToast('Error: ' + msg.message, 5000);
           hideBar();
-          if (msg.id === directSessionId) { hideShaderOverlay(); hideHighlight(); directSessionId = null; currentSessionId = null; selectedElement = null; }
+          if (msg.id && msg.id === currentSessionId) {
+            // The request is over: stop the sweep and forget it, so a reload doesn't resume it.
+            hideShaderOverlay();
+            hideHighlight();
+            stopScrollLock();
+            if (variantObserver) { variantObserver.disconnect(); variantObserver = null; }
+            clearSession();
+            directSessionId = null;
+            currentSessionId = null;
+            selectedElement = null;
+          }
           state = 'PICKING';
           break;
       }
