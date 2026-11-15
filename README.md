@@ -51,6 +51,4 @@ Setup covers Next.js (App and Pages router), Vite/React, Nuxt, SvelteKit, Astro,
 
 ## License
 
-Free for personal, hobby, research, educational and non-profit use under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). **Commercial use needs a paid license**: open an issue to ask.
-
-Parts of Talk-to-UI are derived from an Apache-2.0 project; those parts stay under Apache 2.0. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Free and open source under the [Apache License 2.0](LICENSE.md): use it, change it and share it, at work too. Parts of Talk-to-UI are derived from another Apache-2.0 project; see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

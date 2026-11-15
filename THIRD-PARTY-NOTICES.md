@@ -2,9 +2,9 @@
 
 Talk-to-UI's live toolbar, its helper scripts, and the design guides under `skills/talk-to-ui/reference/` are derived from work **Copyright 2025 Paul Bakaus**, licensed under the Apache License 2.0 (full text below).
 
-**Changes made by Talk-to-UI:** every file under `skills/talk-to-ui/` was modified. The product was renamed throughout; a page scanner, a pin command and unused helpers were removed; the toolbar was restyled (collapsing hover bar, new colours and type, a border-sweep working animation replacing the original shader); and new features were added: draw-to-pick, a 1-5 version selector, the original as a selectable version, a model and reasoning-level picker with a per-account model check (`scripts/models.mjs`), per-model routing, and a direct "Just do it" mode.
+**Changes made by Talk-to-UI:** every file under `skills/talk-to-ui/` was modified. The product was renamed throughout; a page scanner, a pin command and unused helpers were removed; the toolbar was restyled (collapsing hover bar, new colours and type, a border-sweep working animation replacing the original shader); and new features were added: draw-to-pick, a 1-5 version selector, the original as a selectable version, a model and reasoning-level picker with a per-account model check (`scripts/models.mjs`), per-model routing, a direct "Just do it" mode, an always-on mode (a login launcher, a headless runner and a browser extension that carries the toolbar), and several sets of versions kept open across pages.
 
-Under Apache 2.0 section 4, the derived portions stay available under Apache 2.0. Talk-to-UI's own additions and modifications are licensed under the terms in `LICENSE.md`.
+Talk-to-UI as a whole, including these changes, is licensed under the Apache License 2.0 (`LICENSE.md`).
 
 ---
 

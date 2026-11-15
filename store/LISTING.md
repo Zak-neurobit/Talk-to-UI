@@ -20,7 +20,7 @@ Talk-to-UI puts a small toolbar on your local dev site. Pick something on the pa
 - Work on several parts of a page at once: each keeps its versions, marked with a tag, even when you change pages
 - Nothing is added to your code to run it, and nothing leaves your computer except through the AI tool you already use
 
-Requires the free Talk-to-UI helper on your computer (one install line, Mac): https://github.com/Zak-neurobit/Talk-to-UI
+Free and open source (Apache 2.0). Requires the Talk-to-UI helper on your computer (one install line, Mac): https://github.com/Zak-neurobit/Talk-to-UI
 
 **Homepage URL:** https://github.com/Zak-neurobit/Talk-to-UI
 **Support URL:** https://github.com/Zak-neurobit/Talk-to-UI/issues
@@ -36,7 +36,7 @@ Requires the free Talk-to-UI helper on your computer (one install line, Mac): ht
 
 **Host permission justification** (content script on `http://localhost/*` and `http://127.0.0.1/*`): The toolbar only makes sense on a developer's own local site. The extension runs on localhost pages only, asks the local Talk-to-UI helper whether the page belongs to a project on this computer, and if so loads the toolbar from that helper. It never runs on other websites.
 
-**Remote code:** Yes, as built today: the extension loads the toolbar script from the Talk-to-UI helper on the user's own computer (localhost), not from its package. Chrome Web Store policy for Manifest V3 forbids code that is not in the package, so expect a rejection unless the toolbar is bundled into the extension first (then this answer becomes No).
+**Remote code:** No. All of the extension's code is in its package. It reads only settings (a session token, a port number and a model list) from the Talk-to-UI helper on the user's own computer.
 
 **Data usage:** Collects none of the listed data types. Check all three certifications (not sold, not used for unrelated purposes, not used for creditworthiness).
 

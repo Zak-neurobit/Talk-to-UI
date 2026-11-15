@@ -54,6 +54,7 @@ APP="$HOME/.talk-to-ui/app"
 rm -rf "$APP"
 mkdir -p "$HOME/.talk-to-ui"
 cp -R "$ROOT/skills/talk-to-ui" "$APP"
+bash "$APP/extension/bundle.sh" "$APP/extension"   # the extension ships the toolbar itself
 NODE_BIN="$(command -v node)"
 LOG="$HOME/.talk-to-ui/launcher.log"
 if [ "$(uname)" = "Darwin" ]; then

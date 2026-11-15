@@ -1,9 +1,10 @@
 /**
  * Talk-to-UI Live Variant Mode — Browser Script
  *
- * Injected into the user's page via <script src="http://localhost:PORT/live.js">.
- * The server prepends window.__TTUI_TOKEN__ and window.__TTUI_PORT__
- * before this code.
+ * Loaded into the user's page either by the helper's /live.js (terminal mode)
+ * or from the browser extension's own package (always-on mode). Both set
+ * window.__TTUI_TOKEN__, __TTUI_PORT__ and __TTUI_MODELS__ before this code;
+ * the extension also sets __TTUI_ASSETS__ (where modern-screenshot.js lives).
  *
  * UI: a single floating bar that morphs between three states —
  * configure (pick action + go), generating (progressive dots), and cycling
@@ -2641,7 +2642,7 @@
     if (msLoadPromise) return msLoadPromise;
     msLoadPromise = new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'http://localhost:' + PORT + '/modern-screenshot.js';
+      s.src = (window.__TTUI_ASSETS__ || 'http://localhost:' + PORT + '/') + 'modern-screenshot.js';
       s.onload = () => resolve(window.modernScreenshot);
       s.onerror = () => { msLoadPromise = null; reject(new Error('modern-screenshot failed to load')); };
       document.head.appendChild(s);

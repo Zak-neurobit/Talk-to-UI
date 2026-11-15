@@ -295,6 +295,11 @@ function validateEvent(msg) {
 
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
+/** What the toolbar needs to talk to this helper. */
+function toolbarConfig() {
+  return { token: state.token, port: state.port, models: readModelList() };
+}
+
 /** Origin of the page that made the request (Origin header, else the Referer's origin). */
 function requestOrigin(req) {
   if (req.headers.origin) return req.headers.origin;
@@ -334,10 +339,11 @@ function createRequestHandler({ detectScript, sessionPath, livePath }) {
         res.end('Error reading live browser scripts: ' + err.message);
         return;
       }
+      const cfg = toolbarConfig();
       const body =
-        `window.__TTUI_TOKEN__ = '${state.token}';\n` +
-        `window.__TTUI_PORT__ = ${state.port};\n` +
-        `window.__TTUI_MODELS__ = ${JSON.stringify(readModelList())};\n` +
+        `window.__TTUI_TOKEN__ = ${JSON.stringify(cfg.token)};\n` +
+        `window.__TTUI_PORT__ = ${cfg.port};\n` +
+        `window.__TTUI_MODELS__ = ${JSON.stringify(cfg.models)};\n` +
         sessionScript + '\n' +
         liveScript;
       res.writeHead(200, {
@@ -346,6 +352,13 @@ function createRequestHandler({ detectScript, sessionPath, livePath }) {
         'Pragma': 'no-cache',
       });
       res.end(body);
+      return;
+    }
+    // The same values as JSON, for the browser extension: it ships the toolbar
+    // in its own package and only needs this project's token, port and models.
+    if (p === '/config.json') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(toolbarConfig()));
       return;
     }
     if (p === '/detect.js' || p === '/') {
