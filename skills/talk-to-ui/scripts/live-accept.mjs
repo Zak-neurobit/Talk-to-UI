@@ -100,11 +100,20 @@ Output (JSON):
 // Discard
 // ---------------------------------------------------------------------------
 
+/** Drop empty lines at the start and end, so restoring leaves no stray blank lines. */
+function trimBlankEdges(content) {
+  let start = 0;
+  let end = content.length;
+  while (start < end && content[start].trim() === '') start++;
+  while (end > start && content[end - 1].trim() === '') end--;
+  return content.slice(start, end);
+}
+
 function handleDiscard(id, lines, targetFile) {
   const block = findMarkerBlock(id, lines);
   if (!block) return { handled: false, error: 'Markers not found' };
 
-  const original = extractOriginal(lines, block);
+  const original = trimBlankEdges(extractOriginal(lines, block));
   const isJsx = detectCommentSyntax(targetFile).open === '{/*';
   const replaceRange = expandReplaceRange(block, lines, isJsx);
 
@@ -144,8 +153,9 @@ function handleAccept(id, variantNum, lines, targetFile, paramValues) {
   const indent = lines[replaceRange.start].match(/^(\s*)/)[1];
 
   // Extract the chosen variant's inner content
-  const variantContent = extractVariant(lines, block, variantNum);
-  if (!variantContent) return { handled: false, error: 'Variant ' + variantNum + ' not found' };
+  const extracted = extractVariant(lines, block, variantNum);
+  if (!extracted) return { handled: false, error: 'Variant ' + variantNum + ' not found' };
+  const variantContent = trimBlankEdges(extracted);
 
   // Extract CSS block if present
   const cssContent = extractCss(lines, block, id);

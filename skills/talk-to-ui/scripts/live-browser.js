@@ -889,7 +889,10 @@
     Object.assign(barEl.style, { top: top + 'px', left: left + 'px' });
   }
 
+  let barHideTimer = null; // a pending hide must not undo a show that came after it
+
   function showBar(mode) {
+    clearTimeout(barHideTimer);
     barEl.innerHTML = '';
     if (mode === 'configure') barEl.appendChild(buildConfigureRow());
     else if (mode === 'generating') barEl.appendChild(buildGeneratingRow());
@@ -906,7 +909,8 @@
     if (!barEl) return;
     barEl.style.opacity = '0';
     barEl.style.transform = 'translateY(6px)';
-    setTimeout(() => { if (barEl) barEl.style.display = 'none'; }, 250);
+    clearTimeout(barHideTimer);
+    barHideTimer = setTimeout(() => { if (barEl) barEl.style.display = 'none'; }, 250);
     hideActionPicker();
     closeTunePopover();
   }
@@ -1910,6 +1914,7 @@
     updateSelectedElement();
     updateBarContent('cycling');
     saveSession();
+    rememberOpen(currentSessionId, next);
     queueCheckpoint('variant_changed');
   }
 
@@ -2383,11 +2388,27 @@
       hideHighlight();
       return;
     }
+    // Flipping through versions and clicking something else on the page: keep
+    // those versions where they are (tagged) and start on the clicked thing.
+    if (state === 'CYCLING' && pickActive && !own(e.target)
+        && !e.target.closest?.('[data-ttui-variants="' + currentSessionId + '"]')) {
+      parkCurrent();
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      hoveredElement = under && pickable(under) ? under : null;
+    }
     if (state !== 'PICKING' || !pickActive) return;
     if (own(e.target)) return;
     if (!hoveredElement || !pickable(hoveredElement)) return;
     e.preventDefault();
     e.stopPropagation();
+    // Inside something that already has versions: show those instead of
+    // starting a second, overlapping set.
+    const openWrapper = hoveredElement.closest?.('[data-ttui-variants]');
+    if (openWrapper && !isSessionHandled(openWrapper.dataset.ttuiVariants)) {
+      hideHighlight();
+      focusSession(openWrapper.dataset.ttuiVariants);
+      return;
+    }
     selectedElement = hoveredElement;
     state = 'CONFIGURING';
     showHighlight(selectedElement);
@@ -2991,6 +3012,7 @@
   function markSessionHandled() {
     if (!currentSessionId) return;
     sessionState.markHandled(currentSessionId);
+    forgetOpen(currentSessionId);
   }
 
   function isSessionHandled(id) {
@@ -2999,6 +3021,204 @@
 
   function clearHandled() {
     sessionState.clearHandled();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Open versions (A/B/C): several components keep their versions at once.
+  // Each one not being flipped through right now is "parked": it stays on the
+  // version the user last looked at and wears a lime tag; clicking the tag (or
+  // the component) brings its switcher back. Remembered per site in
+  // localStorage, so tags and chosen versions survive page changes and reloads.
+  // ---------------------------------------------------------------------------
+
+  const OPEN_KEY = PREFIX + '-open';
+  const SCOUT_WINDOW_MS = 10000;
+  const OPEN_SYNC_MS = 600;
+  const OPEN_PRUNE_MS = 10000; // how often to ask the helper which sets are still open
+  const tagEls = new Map();    // session id -> tag element
+  let openSyncTimer = null;
+  let openPruneTimer = null;
+
+  function loadOpen() {
+    try { return JSON.parse(localStorage.getItem(OPEN_KEY) || '{}') || {}; } catch { return {}; }
+  }
+  function saveOpen(map) {
+    try { localStorage.setItem(OPEN_KEY, JSON.stringify(map)); } catch { /* storage blocked */ }
+  }
+  function wrapperFor(id) {
+    return document.querySelector('[data-ttui-variants="' + id + '"]');
+  }
+  function variantCount(wrapper) {
+    return wrapper.querySelectorAll('[data-ttui-variant]:not([data-ttui-variant="original"])').length;
+  }
+
+  function rememberOpen(id, visible) {
+    const open = loadOpen();
+    const prev = open[id];
+    const letter = prev?.letter || String.fromCharCode(65 + (Object.keys(open).length % 26));
+    saveOpen({ ...open, [id]: { letter, page: prev?.page || location.pathname, visible } });
+  }
+
+  function forgetOpen(id) {
+    const open = loadOpen();
+    if (!open[id]) return;
+    const { [id]: _gone, ...rest } = open;
+    saveOpen(rest);
+    tagEls.get(id)?.remove();
+    tagEls.delete(id);
+  }
+
+  /** Show version `num` of a parked wrapper, only touching the DOM when it differs. */
+  function applyVisible(wrapper, num) {
+    const key = variantKey(num);
+    for (const child of wrapper.children) {
+      const v = child.dataset ? child.dataset.ttuiVariant : null;
+      if (!v) continue;
+      const want = v === key ? '' : 'none';
+      if (child.style.display !== want) child.style.display = want;
+    }
+  }
+
+  /** Stop flipping through the current versions but keep them on the page. */
+  function parkCurrent() {
+    if (state !== 'CYCLING' || !currentSessionId) return;
+    rememberOpen(currentSessionId, visibleVariant);
+    hideBar();
+    hideHighlight();
+    closeTunePopover();
+    hideParamsPanel();
+    stopScrollTracking();
+    stopScrollLock();
+    if (variantObserver) { variantObserver.disconnect(); variantObserver = null; }
+    clearSession();
+    currentSessionId = null;
+    selectedElement = null;
+    state = 'PICKING';
+  }
+
+  /** Bring a parked component's switcher back. */
+  function focusSession(id) {
+    const wrapper = wrapperFor(id);
+    if (!wrapper || isSessionHandled(id)) return;
+    if (state === 'CONFIGURING') { hideBar(); hideAnnotOverlay(); clearAnnotations(); }
+    parkCurrent();
+    if (state !== 'PICKING' && state !== 'CONFIGURING') return; // busy generating or saving
+    const arrived = variantCount(wrapper);
+    const saved = loadOpen()[id];
+    currentSessionId = id;
+    expectedVariants = parseInt(wrapper.dataset.ttuiVariantCount || String(arrived), 10);
+    arrivedVariants = arrived;
+    visibleVariant = saved && saved.visible >= 0 && saved.visible <= arrived ? saved.visible : Math.min(1, arrived);
+    showVariantInDOM(id, visibleVariant);
+    selectedElement = pickVariantContent(wrapper, visibleVariant) || wrapper.parentElement;
+    tagEls.get(id)?.remove();
+    tagEls.delete(id);
+    state = 'CYCLING';
+    showBar('cycling');
+    startScrollTracking();
+    refreshParamsPanel();
+    saveSession();
+  }
+
+  function tagLabel(entry, wrapper) {
+    const n = variantCount(wrapper);
+    return entry.letter + ' · ' + (entry.visible > 0 ? entry.visible + '/' + n : 'Original');
+  }
+
+  function ensureTag(id, entry, wrapper) {
+    let tag = tagEls.get(id);
+    if (!tag) {
+      tag = document.createElement('button');
+      tag.id = PREFIX + '-tag-' + id;
+      tag.type = 'button';
+      tag.title = 'Show these versions';
+      Object.assign(tag.style, {
+        position: 'fixed', zIndex: String(Z.highlight + 1), padding: '3px 9px',
+        borderRadius: '999px', border: '1px solid ' + C.ink, background: C.brand, color: C.ink,
+        fontFamily: FONT, fontSize: '11px', fontWeight: '600', lineHeight: '16px',
+        cursor: 'pointer', boxShadow: '0 2px 8px rgb(0 0 0 / 0.25)', whiteSpace: 'nowrap',
+      });
+      tag.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); focusSession(id); });
+      document.body.appendChild(tag);
+      tagEls.set(id, tag);
+    }
+    const text = tagLabel(entry, wrapper);
+    if (tag.textContent !== text) tag.textContent = text;
+    positionTag(tag, wrapper, entry.visible);
+  }
+
+  function positionTag(tag, wrapper, visible) {
+    const content = pickVariantContent(wrapper, visible) || wrapper.parentElement;
+    const r = content ? content.getBoundingClientRect() : null;
+    if (!r || (r.width === 0 && r.height === 0)) { tag.style.display = 'none'; return; }
+    tag.style.display = '';
+    tag.style.top = Math.max(4, r.top - 12) + 'px';
+    tag.style.left = Math.max(4, r.left) + 'px';
+  }
+
+  function positionTags() {
+    const open = loadOpen();
+    for (const [id, tag] of tagEls) {
+      const wrapper = wrapperFor(id);
+      if (wrapper && open[id]) positionTag(tag, wrapper, open[id].visible);
+    }
+  }
+
+  /** Keep the page's wrappers, tags and remembered versions in step. */
+  function syncOpen() {
+    const open = loadOpen();
+    const onPage = new Set();
+    for (const wrapper of document.querySelectorAll('[data-ttui-variants]')) {
+      const id = wrapper.dataset.ttuiVariants;
+      if (!id || isSessionHandled(id) || variantCount(wrapper) === 0) continue;
+      onPage.add(id);
+      if (id === currentSessionId) continue;
+      let entry = open[id];
+      if (!entry) { rememberOpen(id, Math.min(1, variantCount(wrapper))); entry = loadOpen()[id]; }
+      applyVisible(wrapper, entry.visible);
+      ensureTag(id, entry, wrapper);
+    }
+    // The page changed under the set being flipped through: keep it for when the user comes back.
+    if (state === 'CYCLING' && currentSessionId && !onPage.has(currentSessionId)) parkCurrent();
+    for (const [id, tag] of tagEls) {
+      if (!onPage.has(id) || id === currentSessionId) { tag.remove(); tagEls.delete(id); }
+    }
+  }
+
+  /** Forget sets the helper says are finished (kept or discarded, maybe in another tab). */
+  function pruneOpen() {
+    if (Object.keys(loadOpen()).length === 0) return;
+    fetch('http://localhost:' + PORT + '/status?token=' + TOKEN)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((status) => {
+        if (!status || !Array.isArray(status.activeSessions)) return;
+        const active = new Set(status.activeSessions
+          .filter((x) => x.phase !== 'completed' && x.phase !== 'discarded')
+          .map((x) => x.id));
+        for (const id of Object.keys(loadOpen())) if (!active.has(id)) forgetOpen(id);
+      })
+      .catch(() => { /* helper unreachable: keep everything */ });
+  }
+
+  function startOpenSync() {
+    if (openSyncTimer) return;
+    syncOpen();
+    pruneOpen();
+    openSyncTimer = setInterval(syncOpen, OPEN_SYNC_MS);
+    openPruneTimer = setInterval(pruneOpen, OPEN_PRUNE_MS);
+    window.addEventListener('scroll', positionTags, { passive: true, capture: true });
+    window.addEventListener('resize', positionTags, { passive: true });
+  }
+
+  function stopOpenSync() {
+    clearInterval(openSyncTimer);
+    clearInterval(openPruneTimer);
+    openSyncTimer = null;
+    openPruneTimer = null;
+    window.removeEventListener('scroll', positionTags, { capture: true });
+    window.removeEventListener('resize', positionTags);
+    for (const tag of tagEls.values()) tag.remove();
+    tagEls.clear();
   }
 
   function cleanup() {
@@ -3088,8 +3308,20 @@
   // If a [data-ttui-variants] wrapper exists in the DOM, the agent wrote
   // variants before HMR fired. Pick up where we left off.
   function resumeSession() {
-    const wrapper = document.querySelector('[data-ttui-variants]');
-    if (!wrapper) { clearSession(); clearHandled(); return false; }
+    // Resume the set that was being worked on (saved as the current session);
+    // otherwise only a set nobody parked. Parked sets just get their tags.
+    const saved0 = loadSession();
+    const open = loadOpen();
+    const all = [...document.querySelectorAll('[data-ttui-variants]')];
+    if (all.length === 0) {
+      // Another page: keep the set being worked on for when the user returns.
+      if (!(saved0 && open[saved0.id])) clearSession();
+      clearHandled();
+      return false;
+    }
+    const wrapper = (saved0 && all.find((w) => w.dataset.ttuiVariants === saved0.id))
+      || all.find((w) => !open[w.dataset.ttuiVariants] && !isSessionHandled(w.dataset.ttuiVariants));
+    if (!wrapper) return false;
 
     const sessionId = wrapper.dataset.ttuiVariants;
 
@@ -3748,6 +3980,7 @@
   /** Full teardown: remove all UI, disconnect SSE, clean up. */
   function teardown() {
     cleanup();
+    stopOpenSync();
     hideBar();
     if (globalBarEl) {
       globalBarEl.style.transform = 'translateY(100%)';
@@ -4923,9 +5156,13 @@
         }
       });
       scout.observe(document.body, { childList: true, subtree: true });
+      // Only for hydration right after load. Versions that show up later belong
+      // to whichever tab asked for them; this tab just tags them.
+      setTimeout(() => scout.disconnect(), SCOUT_WINDOW_MS);
     } else {
       console.log('[ttui] Resumed active variant session ' + currentSessionId + ' (' + arrivedVariants + '/' + expectedVariants + ' variants).');
     }
+    startOpenSync();
   }
 
   if (document.readyState === 'loading') {

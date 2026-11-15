@@ -19,6 +19,7 @@ This installs the skill into `~/.claude/skills` and/or `~/.codex/skills`, whiche
 1. Run your dev server as usual and open the site. Any localhost page of a project on your computer gets the toolbar: a small lime mark at the bottom. Hover it to open.
 2. **Pick** something (or circle it), say what you want, press Enter. Your AI (Claude Code or Codex, signed in as you) writes the versions in the background; no terminal needed.
 3. Use ← → to flip through the versions. The first stop is your original. Enter keeps one; Escape throws them all away.
+4. Want to work on something else before deciding? Just click it. The versions you were flipping through stay on the page on the one you were looking at, with a lime tag ("A · 2/3"). Click a tag to pick up where you left off. Tags and choices survive page changes and reloads.
 
 The first time a project is opened, Talk-to-UI checks which models your account can run (about 15 seconds).
 
