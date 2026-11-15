@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Talk-to-UI",
-  "version": "0.1.0",
-  "description": "Puts the Talk-to-UI toolbar on every localhost page whose project is on this computer.",
+  "version": "1.0.0",
+  "description": "Edit your local dev site by talking to it: pick anything on a localhost page, say what to change, flip through versions.",
+  "homepage_url": "https://github.com/Zak-neurobit/Talk-to-UI",
   "content_scripts": [
     {
       "matches": ["http://localhost/*", "http://127.0.0.1/*"],
@@ -10,5 +11,10 @@
       "run_at": "document_idle"
     }
   ],
-  "icons": { "128": "icon128.png" }
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }

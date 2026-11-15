@@ -234,7 +234,7 @@ function readModelList() {
     if (models.length === 0) return null;
     return {
       provider: typeof raw.provider === 'string' ? raw.provider.slice(0, 20) : '',
-      terminal: typeof raw.terminal === 'string' ? raw.terminal : models[0].id,
+      terminal: typeof raw.terminal === 'string' ? raw.terminal : null, // null: always-on mode, no terminal
       models,
     };
   } catch {

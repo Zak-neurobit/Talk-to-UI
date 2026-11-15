@@ -2209,7 +2209,6 @@
       switch (msg.type) {
         case 'connected':
           hasProjectContext = !!msg.hasProjectContext;
-          if (!hasProjectContext) showToast('No PRODUCT.md found. Variants will be brand-agnostic. Run /ttui teach to generate one.', 7000);
           console.log('[ttui] Live mode connected.');
           if (state === 'IDLE') state = 'PICKING';
           break;
@@ -4488,7 +4487,7 @@
     if (designState.present === false) {
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.innerHTML = `<strong>No DESIGN.md yet</strong>Create one by running <code>/ttui document</code> in your terminal, then re-open this panel.`;
+      empty.innerHTML = `<strong>No DESIGN.md yet</strong>Ask your AI to "write a DESIGN.md for this project", then re-open this panel.`;
       body.appendChild(empty);
       return;
     }
@@ -4518,7 +4517,7 @@
     box.className = 'stale';
     box.innerHTML = `
       <span class="stale-dot"></span>
-      <span class="stale-text"><strong>DESIGN.md is newer than .talk-to-ui/design.json.</strong> Run <code>/ttui document</code> to refresh the sidecar.</span>
+      <span class="stale-text"><strong>DESIGN.md is newer than .talk-to-ui/design.json.</strong> Ask your AI to refresh DESIGN.md to update it.</span>
     `;
     return box;
   }
@@ -4526,7 +4525,7 @@
   function renderParsedMdCta() {
     const box = document.createElement('div');
     box.className = 'parsed-md-cta';
-    box.innerHTML = `<strong>Basic view</strong>This panel reads the tokens in your <code>DESIGN.md</code> frontmatter. Running <code>/ttui document</code> also generates a <code>.talk-to-ui/design.json</code> sidecar with your project's actual component snippets (button, input, nav) and tonal ramps, rendered live below the tokens.`;
+    box.innerHTML = `<strong>Basic view</strong>This panel reads the tokens in your <code>DESIGN.md</code> frontmatter. Asking your AI to write DESIGN.md also generates a <code>.talk-to-ui/design.json</code> sidecar with your project's actual component snippets (button, input, nav) and tonal ramps, rendered live below the tokens.`;
     return box;
   }
 
