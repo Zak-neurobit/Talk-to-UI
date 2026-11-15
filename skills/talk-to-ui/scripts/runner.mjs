@@ -24,6 +24,7 @@ const LIVE_DIR = path.join(PROJECT, '.talk-to-ui', 'live');
 const POLL_TIMEOUT_MS = 600000;
 const AGENT_TIMEOUT_MS = 15 * 60 * 1000;
 const SERVER_GONE_EXIT_MS = 60000;
+const MODEL_CHECK_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const CLAUDE_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 // The AI may run only the helper scripts its job needs, plus a type check.
 const AGENT_SCRIPTS = ['live-wrap.mjs', 'live-complete.mjs', 'live-status.mjs', 'live-resume.mjs'];
@@ -66,8 +67,11 @@ function run(cmd, args, { timeoutMs } = {}) {
 
 const script = (name) => path.join(__dirname, name);
 
+/** Check the account's models when the list is missing or older than a day, so new releases show up. */
 async function ensureModelList(prov) {
-  if (fs.existsSync(path.join(LIVE_DIR, 'models.json'))) return;
+  try {
+    if (Date.now() - fs.statSync(path.join(LIVE_DIR, 'models.json')).mtimeMs < MODEL_CHECK_MAX_AGE_MS) return;
+  } catch { /* no list yet */ }
   log('checking which models this account can run');
   const r = await run(process.execPath, [script('models.mjs'), '--provider', prov, '--terminal', 'none'], { timeoutMs: 120000 });
   log('model check:', r.code === 0 ? r.stdout.trim() : r.stderr.trim());
@@ -184,7 +188,10 @@ async function main() {
   await ensureModelList(prov);
 
   let downSince = null;
+  let modelCheck = null;
   for (;;) {
+    // Daily re-check runs alongside the work, so a request never waits for it.
+    modelCheck = modelCheck || ensureModelList(prov).finally(() => { modelCheck = null; });
     const r = await run(process.execPath, [script('live-poll.mjs'), '--timeout=' + POLL_TIMEOUT_MS]);
     if (r.code !== 0) {
       downSince = downSince || Date.now();
