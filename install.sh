@@ -77,7 +77,13 @@ if [ "$(uname)" = "Darwin" ]; then
 </plist>
 PLIST_EOF
   launchctl bootout "gui/$(id -u)/com.talk-to-ui.launcher" 2>/dev/null || true
-  launchctl bootstrap "gui/$(id -u)" "$PLIST"
+  # The old copy can take a moment to shut down; retry until it is gone.
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null && break
+    sleep 0.5
+  done
+  launchctl print "gui/$(id -u)/com.talk-to-ui.launcher" >/dev/null 2>&1 \
+    || { echo "Could not start the always-on launcher. Run: launchctl bootstrap gui/$(id -u) $PLIST" >&2; exit 1; }
   echo "Always-on launcher running (starts at login)."
 elif command -v systemctl >/dev/null; then
   UNIT="$HOME/.config/systemd/user/talk-to-ui.service"
